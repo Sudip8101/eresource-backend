@@ -2,3 +2,5 @@ flask
 gunicorn
 werkzeug
 python-dotenv
+Flask-Cors
+

@@ -4,6 +4,7 @@ import sqlite3, datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import send_from_directory, g  
 import os
+from flask import url_for
 
 # Auto-create folders if missing
 os.makedirs("uploads", exist_ok=True)
@@ -544,17 +545,29 @@ def admin_resources():
 
 @app.post("/api/admin/resources")
 def admin_add_resource():
-    """Create a new resource row."""
+    """Create a new resource row (robust tags + link normalization)."""
     data = request.get_json(force=True) or {}
-    title  = (data.get("title")  or "").strip()
-    rtype  = (data.get("type")   or "").strip().lower()
-    course = (data.get("course") or "").strip()
-    tags   = ",".join([t.strip() for t in (data.get("tags") or []) if t.strip()])
-    link   = (data.get("link")   or "").strip()
+
+    title   = (data.get("title")  or "").strip()
+    rtype   = (data.get("type")   or "").strip().lower()
+    course  = (data.get("course") or "").strip()
+    link    = (data.get("link")   or "").strip()
     added_by = (data.get("added_by_email") or "").strip().lower()
 
-    if not title or rtype not in ("pdf","epub","video") or not course:
-        return jsonify({"error":"title, type(pdf|epub|video) and course are required"}), 400
+    # tags can be a list or a comma string
+    tags_in = data.get("tags") or ""
+    if isinstance(tags_in, list):
+        tags = ",".join(t.strip() for t in tags_in if t and t.strip())
+    else:
+        tags = ",".join(t.strip() for t in str(tags_in).split(",") if t.strip())
+
+    # normalize relative /uploads paths to an absolute URL on this backend
+    if link and (link.startswith("/uploads/") or link.startswith("uploads/")):
+        fname = link.split("/uploads/")[-1]  # safe for both "/uploads/x" and "uploads/x"
+        link  = url_for("serve_upload", fname=fname, _external=True)
+
+    if not title or rtype not in ("pdf", "epub", "video") or not course:
+        return jsonify({"error": "title, type(pdf|epub|video) and course are required"}), 400
 
     conn = get_conn()
     c = conn.cursor()
@@ -646,4 +659,5 @@ if __name__ == "__main__":
         init_tables()
         ensure_user_last_seen_column()
     app.run(debug=True)
+
 

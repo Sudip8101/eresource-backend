@@ -651,24 +651,7 @@ def admin_stats():
         "online_now": online_now or 0
     })
 
-@app.get("/api/admin/fix-links")
-def fix_old_links():
-    host_base = request.host_url.rstrip("/")
-    conn = get_conn()
-    c = conn.cursor()
-    rows = c.execute("""
-        SELECT id, link FROM resources
-        WHERE link LIKE '/uploads/%' OR link LIKE 'uploads/%'
-    """).fetchall()
 
-    for rid, link in rows:
-        fname = link.split("/uploads/")[-1]
-        new_link = f"{host_base}/uploads/{fname}"
-        c.execute("UPDATE resources SET link=? WHERE id=?", (new_link, rid))
-
-    conn.commit()
-    conn.close()
-    return jsonify({"ok": True, "updated": len(rows)})
 
 
 # ---------------- Run ----------------
@@ -677,6 +660,7 @@ if __name__ == "__main__":
         init_tables()
         ensure_user_last_seen_column()
     app.run(debug=True)
+
 
 
 

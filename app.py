@@ -654,9 +654,6 @@ def admin_stats():
 
 
 
-@app.get("/health")
-def health():
-    return jsonify({"status": "OK", "time": datetime.utcnow().isoformat()})
 
 
 
@@ -666,6 +663,7 @@ if __name__ == "__main__":
         init_tables()
         ensure_user_last_seen_column()
     app.run(debug=True)
+
 
 
 

@@ -5,6 +5,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask import send_from_directory, g  
 import os
 from flask import url_for
+from flask import jsonify
 
 # Auto-create folders if missing
 os.makedirs("uploads", exist_ok=True)
@@ -653,6 +654,11 @@ def admin_stats():
 
 
 
+@app.get("/health")
+def health():
+    return jsonify({"status": "OK", "time": datetime.utcnow().isoformat()})
+
+
 
 # ---------------- Run ----------------
 if __name__ == "__main__":
@@ -660,6 +666,7 @@ if __name__ == "__main__":
         init_tables()
         ensure_user_last_seen_column()
     app.run(debug=True)
+
 
 
 

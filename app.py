@@ -547,7 +547,6 @@ def admin_resources():
 def admin_add_resource():
     """Create a new resource row (robust tags + link normalization)."""
     data = request.get_json(force=True) or {}
-
     title   = (data.get("title")  or "").strip()
     rtype   = (data.get("type")   or "").strip().lower()
     course  = (data.get("course") or "").strip()
@@ -659,5 +658,6 @@ if __name__ == "__main__":
         init_tables()
         ensure_user_last_seen_column()
     app.run(debug=True)
+
 
 

@@ -5,6 +5,9 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask import send_from_directory, g  
 import os
 
+# Auto-create folders if missing
+os.makedirs("uploads", exist_ok=True)
+os.makedirs("data", exist_ok=True)
 
 app = Flask(__name__)
 
@@ -643,3 +646,4 @@ if __name__ == "__main__":
         init_tables()
         ensure_user_last_seen_column()
     app.run(debug=True)
+

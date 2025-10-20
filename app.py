@@ -550,20 +550,7 @@ def admin_stats():
         "courses": courses or 0,
         "online_now": online_now or 0
     })
-@app.get("/api/debug-tables")
-def debug_tables():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    tables = [r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
-    sample = {}
-    for t in tables:
-        try:
-            rows = conn.execute(f"SELECT * FROM {t} LIMIT 3").fetchall()
-            sample[t] = [dict(r) for r in rows]
-        except Exception as e:
-            sample[t] = f"Error reading: {e}"
-    conn.close()
-    return jsonify({"db_path": DB_PATH, "tables": tables, "samples": sample})
+
 
 
 # -------------------------
@@ -588,4 +575,5 @@ if __name__ == "__main__":
     with app.app_context():
         _bootstrap_once()
     app.run(debug=True, host="0.0.0.0", port=5000)
+
 

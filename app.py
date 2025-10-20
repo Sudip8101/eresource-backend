@@ -8,6 +8,41 @@ from flask import url_for
 
 app = Flask(__name__)
 
+# after you create `app = Flask(__name__)`
+if CORS is not None:
+    # Allow your website to call all /api/* endpoints
+    CORS(
+        app,
+        resources={r"/api/*": {"origins": [FRONTEND_BASE]}},
+        supports_credentials=False,
+        methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_headers=["Content-Type", "Authorization"],
+        expose_headers=[],
+        max_age=3600,
+    )
+
+# Belt & suspenders: ensure headers are present on every response
+@app.after_request
+def add_cors_headers(resp):
+    origin = request.headers.get("Origin")
+    if origin and origin.startswith(FRONTEND_BASE):
+        resp.headers["Access-Control-Allow-Origin"] = origin
+        resp.headers["Vary"] = "Origin"
+        resp.headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE,OPTIONS"
+        resp.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+    return resp
+
+# Handle preflight explicitly for /api/* (avoids 405 on OPTIONS)
+@app.route("/api/<path:_subpath>", methods=["OPTIONS"])
+def _api_preflight(_subpath):
+    resp = make_response("", 204)
+    origin = request.headers.get("Origin", FRONTEND_BASE)
+    resp.headers["Access-Control-Allow-Origin"] = origin
+    resp.headers["Vary"] = "Origin"
+    resp.headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE,OPTIONS"
+    resp.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+    return resp
+
 # --- File Upload Setup ---
 UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -668,5 +703,6 @@ if __name__ == "__main__":
         init_tables()
         ensure_user_last_seen_column()
     app.run(debug=True)
+
 
 

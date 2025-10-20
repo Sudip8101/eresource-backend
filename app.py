@@ -5,11 +5,6 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask import send_from_directory, g  
 import os
 from flask import url_for
-from flask import jsonify
-
-# Auto-create folders if missing
-os.makedirs("uploads", exist_ok=True)
-os.makedirs("data", exist_ok=True)
 
 app = Flask(__name__)
 
@@ -23,7 +18,7 @@ def serve_upload(fname):
 
 CORS(app)
 
-DB_PATH = "eresources.db"
+DB_PATH = os.environ.get("SQLITE_PATH", "eresources.db")
 
 # --- DB helper (add once) ---
 def get_conn():
@@ -548,6 +543,7 @@ def admin_resources():
 def admin_add_resource():
     """Create a new resource row (robust tags + link normalization)."""
     data = request.get_json(force=True) or {}
+
     title   = (data.get("title")  or "").strip()
     rtype   = (data.get("type")   or "").strip().lower()
     course  = (data.get("course") or "").strip()
@@ -585,10 +581,14 @@ def admin_upload():
     f = request.files.get("file")
     if not f:
         return jsonify({"error": "No file provided"}), 400
-    safe_name = f.filename.replace("..", "").replace("/", "_").replace("\\", "_")
+
+    safe_name = f.filename.replace("..","").replace("/","_").replace("\\","_")
     path = os.path.join(UPLOAD_DIR, safe_name)
     f.save(path)
-    return jsonify({"url": f"/uploads/{safe_name}"})
+
+    # ✅ absolute URL, tied to the backend host
+    file_url = url_for("serve_upload", fname=safe_name, _external=True)
+    return jsonify({"url": file_url})
 
 # latest 50
 @app.get("/api/admin/resources/recent")
@@ -652,9 +652,10 @@ def admin_stats():
         "online_now": online_now or 0
     })
 
-
-
-
+@app.before_first_request
+def _boot():
+    init_tables()
+    ensure_user_last_seen_column()
 
 
 # ---------------- Run ----------------
@@ -663,10 +664,3 @@ if __name__ == "__main__":
         init_tables()
         ensure_user_last_seen_column()
     app.run(debug=True)
-
-
-
-
-
-
-

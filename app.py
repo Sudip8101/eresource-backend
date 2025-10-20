@@ -19,6 +19,26 @@ FRONTEND_BASE = os.environ.get("FRONTEND_BASE", "https://eresource.simpletoolspr
 
 app = Flask(__name__)
 
+from threading import Lock
+
+_bootstrap_lock = Lock()
+app.config.setdefault("BOOTSTRAPPED", False)
+
+def _bootstrap_once():
+    """Run _bootstrap() exactly once per process (Flask 3-safe)."""
+    if not app.config["BOOTSTRAPPED"]:
+        with _bootstrap_lock:
+            if not app.config["BOOTSTRAPPED"]:
+                _bootstrap()
+                app.config["BOOTSTRAPPED"] = True
+
+@app.before_request
+def _ensure_bootstrap():
+    # Cheap check; runs _bootstrap() only once
+    if not app.config["BOOTSTRAPPED"]:
+        _bootstrap_once()
+
+
 # CORS for your site only, API routes
 if CORS is not None:
     CORS(
@@ -549,7 +569,9 @@ def debug_tables():
 # -------------------------
 # Bootstrap schema on start (Flask 3)
 # -------------------------
-@app.before_serving
+# -----------------------
+# Bootstrap schema on start (Flask 3-compatible)
+# -----------------------
 def _bootstrap():
     print(f"Bootstrapping DB at: {DB_PATH}")
     init_tables()
@@ -558,10 +580,12 @@ def _bootstrap():
     print("Schema ready.")
 
 
+
 # -------------------------
 # Local dev
 # -------------------------
 if __name__ == "__main__":
     with app.app_context():
-        _bootstrap()
+        _bootstrap_once()
     app.run(debug=True, host="0.0.0.0", port=5000)
+

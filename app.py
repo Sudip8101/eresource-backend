@@ -20,6 +20,11 @@ CORS(app)
 
 DB_PATH = os.environ.get("SQLITE_PATH", "eresources.db")
 
+# --- FIX: ensure folder exists before connecting ---
+db_dir = os.path.dirname(DB_PATH)
+if db_dir and not os.path.exists(db_dir):
+    os.makedirs(db_dir, exist_ok=True)
+
 # --- DB helper (add once) ---
 def get_conn():
     conn = sqlite3.connect(DB_PATH)
@@ -664,3 +669,4 @@ if __name__ == "__main__":
         init_tables()
         ensure_user_last_seen_column()
     app.run(debug=True)
+

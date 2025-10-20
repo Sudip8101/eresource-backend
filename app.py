@@ -5,6 +5,13 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask import send_from_directory, g  
 import os
 from flask import url_for
+from flask import request, make_response
+try:
+    from flask_cors import CORS
+except ImportError:
+    CORS = None
+
+FRONTEND_BASE = os.environ.get("FRONTEND_BASE", "https://eresource.simpletoolspro.com")
 
 app = Flask(__name__)
 
@@ -703,6 +710,7 @@ if __name__ == "__main__":
         init_tables()
         ensure_user_last_seen_column()
     app.run(debug=True)
+
 
 
 
